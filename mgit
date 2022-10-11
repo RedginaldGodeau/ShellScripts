@@ -1,0 +1,25 @@
+#!/bin/bash
+
+if [ -z "$1" ]
+then
+	echo -e "mgit [PATH]\n"
+	exit 1
+fi
+
+read -p "Enter your commit : " commit
+if [ -z "$commit" ] 
+then
+          echo -e "please write a commit\n"
+          exit 1
+fi
+
+
+for f in "$@"
+do
+	echo -e "$f \n"
+	git add $f
+done
+
+git commit -m "$commit"
+git push
+
