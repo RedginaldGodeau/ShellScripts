@@ -16,7 +16,6 @@ fi
 
 for f in "$@"
 do
-	echo -e "$f \n"
 	git add $f
 done
 
