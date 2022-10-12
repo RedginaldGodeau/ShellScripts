@@ -1,24 +1,113 @@
 #!/bin/bash
 
-if [ -z "$1" ]
+# CONST
+CFILE="/.mgitconfig"
+
+# ARGUMENTS
+CMD="$1"
+ARGS="${@:2}"
+
+# CONFIG FILE
+if [ ! -f "$CFILE" ]
 then
-	echo -e "mgit [PATH]\n"
+	touch $CFILE
+fi
+
+MYGITTOKEN=$( cat "$CFILE")
+
+
+
+# CHECKING COMMANDS
+if [ -z $CMD ]
+then
+	echo -e "mgit help"
 	exit 1
 fi
+#LISTING COMMANDS
+case $CMD in
+	# HELP
+	help)
+	clr='\033[1;36m'
+	noclr='\033[0m'
+	echo -e "${clr}[ MAKE GIT ]"
+	echo -e "${clr}mgit help :${noclr} Donne la liste des differentes commandes de mgit.\n"
+	echo -e "${clr}mgit push [FICHIER 1] [FICHIER 2] [FICHIER ...] :${noclr} Permet d'envoyer vos fichier a github.\n"
+	echo -e "${clr}mgit clone [URL DU GIT] :${noclr} Permet de telecharger un fichier github.\n"
+	echo -e "${clr}mgit token [VOTRE TOKEN] :${noclr} Permet de sauvegarder votre gittoken pour mgit clone.\n"
+	echo -e "${clr}mgit gettoken :${noclr} Donne le gittoken enregister.\n"
 
-read -p "Enter your commit : " commit
-if [ -z "$commit" ] 
-then
-          echo -e "please write a commit\n"
-          exit 1
-fi
+	exit 1
+	;;
+	# PUSH
+        push)
+        	if [ -z "$2" ]
+		then 
+			echo -e "[ERROR]: Fichier manquant !"
+			exit 1
+		fi
+		read -p "Entrer votre commit :" commit
+		if [ -z "$commit" ]
+		then
+			echo -e "[ERROR]: Commit manquant !"
+			exit 1
+		fi
+		
+		for f in $ARGS
+		do
+			git add $f
+		done
+		git commit -m "$commit"
+		git push
 
+        	exit 1
+        ;;
+	# CLONE
+	clone)
+		if [ -z "$2" ]
+                then
+                        echo -e "[ERROR]: URL manquante !\n"
+                        exit 1
+                fi	
+		
+		GITNAME=$(echo "$2" | rev | cut -d "." -f2 | cut -d "/" -f1 | rev)
+		echo "$GITNAME"
 
-for f in "$@"
-do
-	git add $f
-done
+		read -p "GIT KEY (Laissez blanc si vous en avez pas ou ecrive \"ME\" pour votre token) :" gtoken
+		if [ -z "$gtoken" ]
+		then
+        		git clone $gtoken
+			echo -e "Vos fichier ont ete telechargeÃ\n"
+			cd "./$GITNAME"
+        		exit 1
+		fi
 
-git commit -m "$commit"
-git push
+		if [ "$gtoken" == "ME" ]
+		then
+			echo -e "Vous avez choisis votre token\n"
+			gtoken="$MYGITTOKEN"
+		fi
+		
+		GITBEG=$(echo "$2" | cut -d ':' -f1)
+		GITEND=$(echo "$2" | cut -d ':' -f2 | cut -b 3-)
 
+		git clone "$GITBEG://$gtoken@$GITEND"
+		echo -e "Vos fichier ont ete telecharge"
+		cd $GITNAME
+	;;
+	# SET TOKEN
+	token)
+		if [ -z "$2" ]
+		then
+			echo -e "[ERROR]: Token maquant ! \n"
+			exit 1
+		fi
+		echo "$2" >> $CFILE
+		echo -e "Votre token a ete change"
+		exit 1
+	;;
+	# GET TOKEN
+	gettoken)
+                echo -e "Votre token est $MYGITTOKEN"
+                exit 1
+        ;;
+esac
